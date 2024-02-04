@@ -1,0 +1,29 @@
+[run]
+branch = True
+source = prevent-sleep
+
+[paths]
+source =
+    src
+    **/site-packages/prevent-sleep
+
+[report]
+fail_under = 100
+precision = 3
+exclude_lines =
+    # Have to re-enable the standard pragma
+    pragma: no cover
+
+    # Don't complain if tests don't hit defensive assertion code:
+    raise .*Internal error.*
+    raise .*AbstractNotImplemented.*
+    raise *\# Should not happen
+
+partial_branches =
+    # Have to re-enable the standard pragma
+    pragma: no branch
+
+omit =
+    test/*
+    experiments
+    .nox/*
