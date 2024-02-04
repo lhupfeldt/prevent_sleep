@@ -1,6 +1,11 @@
-"""Test the dummy module, replace with your own tests code."""
+import logging
 
-from prevent-sleep.prevent_sleep import dummy
+import pytest
 
-def test_dummy():
-    assert dummy()
+from prevent_sleep import prevent_sleep
+
+
+@pytest.mark.parametrize("loglevel, loops", [(logging.INFO, 3), (logging.DEBUG, 2)])
+def test_prevent_sleep(loglevel, loops):
+    prevent_sleep.prevent_sleep(loglevel, sleep_seconds=0.1, max_inactive_seconds=1, max_loops=loops)
+    pytest.xfail("TODO")

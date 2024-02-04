@@ -38,6 +38,7 @@ def _fixture_out_dir(request):
         if ex.errno != errno.ENOENT:
             raise
 
+    Path(out_dir).mkdir(parents=True)
     return out_dir
 
 # Add you configuration, e.g. fixtures here.

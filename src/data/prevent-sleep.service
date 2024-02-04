@@ -1,0 +1,14 @@
+[Unit]
+Description=Prevent system from sleeping/suspending when there are SSH or NFS clients.
+After=network.target
+
+[Service]
+Type=exec
+Restart=always
+RestartSec=1
+User=root
+SyslogIdentifier=clients-prevent-sleep
+ExecStart={{exectable_path}}
+
+[Install]
+WantedBy=multi-user.target

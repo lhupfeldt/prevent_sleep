@@ -19,7 +19,7 @@ nox.options.error_on_missing_interpreters = True
 
 @nox.session(python=_PY_VERSIONS, reuse_venv=True)
 def typecheck(session):
-    session.install("-e", ".", "mypy>=1.5.1")
+    session.install(".", "mypy>=1.5.1", "types-psutil")
     session.run("mypy", str(_HERE/"src"))
 
 
@@ -27,19 +27,21 @@ def typecheck(session):
 @nox.session(python="3.11", reuse_venv=True)
 def pylint(session):
     session.install(".", "pylint<3.0.0", "pylint-pytest>=1.1.2")  # TODO pylint/pylint-pytest
+    session.install("pystemd>=0.13.2")  # TODO
 
     print("\nPylint src)")
-    session.run("pylint", "--fail-under", "9.8", str(_HERE/"src"))
+    session.run("pylint", "--fail-under", "10", str(_HERE/"src"))
 
     print("\nPylint test sources")
     disable_checks = "missing-module-docstring,missing-class-docstring,missing-function-docstring"
     disable_checks += ",multiple-imports,invalid-name,duplicate-code"
-    session.run("pylint", "--fail-under", "9.8", "--variable-rgx", r"[a-z_][a-z0-9_]{1,30}$", "--disable", disable_checks, str(_HERE/"test"))
+    session.run("pylint", "--fail-under", "10", "--variable-rgx", r"[a-z_][a-z0-9_]{1,30}$", "--disable", disable_checks, str(_HERE/"test"))
 
 
 @nox.session(python=_PY_VERSIONS, reuse_venv=True)
 def unit(session):
     session.install(".", "pytest>=7.4.1", "coverage>=7.3.1", "pytest-cov>=4.1.0")
+    session.install("pystemd>=0.13.2")  # TODO
     session.run("pytest", "--import-mode=append", "--cov", "--cov-report=term-missing", f"--cov-config={_TEST_DIR}/.coveragerc", *session.posargs)
 
 

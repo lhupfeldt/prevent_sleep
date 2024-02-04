@@ -1,4 +1,0 @@
-prevent-sleep
-_____________
-
-Documentation
