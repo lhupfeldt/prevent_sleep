@@ -13,8 +13,6 @@ from typing import ClassVar
 
 import dbus  # type: ignore
 
-from .systemd_mask import SystemdMaskManager
-
 
 _LOG = logging.getLogger(__name__)
 
@@ -26,7 +24,6 @@ class DBusProxy():  # pylint: disable=too-few-public-methods
         _LOG.debug("D-Bus system bus: %s", system_bus)
         self.proxy = system_bus.get_object('org.freedesktop.login1', "/org/freedesktop/login1")
         _LOG.debug("D-Bus object proxy %s", self.proxy)
-        _ = SystemdMaskManager()
 
 
 class DbusInhibit():

@@ -7,13 +7,13 @@ import logging
 
 import psutil
 
-from .checker import Checker
+from . import checker
 
 
 _LOG = logging.getLogger(__name__)
 
 
-class SshChecker(Checker):
+class Checker(checker.Checker):
     """Check for *active* SSH clients."""
     def __init__(self, check_interval_seconds: int, max_read_chars_per_second: int = 20):
         super().__init__(check_interval_seconds=check_interval_seconds)

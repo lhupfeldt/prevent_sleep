@@ -5,15 +5,17 @@ Uses dbus to prevent sleep.
 """
 
 import os
+import importlib
 import time
+from pathlib import Path
 from datetime import datetime, timedelta
 import logging
 
 from .checks.checker import Checker
-from .checks.ssh_clients import SshChecker
-from .checks.nfs_clients import NfsChecker
 from .inhibitors.dbus_inhibit import DbusInhibit
+from .inhibitors.systemd_mask import SystemdMaskManager
 
+_HERE = Path(__file__).parent
 _LOG = logging.getLogger(__name__)
 
 
@@ -64,17 +66,33 @@ def prevent_sleep(loglevel, check_interval_seconds = 10, max_inactive_seconds = 
     if euid:
         _LOG.warning("Program is not running as root. Functionality will be limited.")
 
-    ssh_ci = CheckInhibit(SshChecker(check_interval_seconds), max_inactive_seconds)
-    nfs_ci = CheckInhibit(NfsChecker(check_interval_seconds), max_inactive_seconds)
+    check_inhibitors = []
+    _LOG.info("")
+    for ff in os.scandir(_HERE/"checks"):
+        if not ff.name.endswith(".py") or ff.name in ["__init__.py", "checker.py"]:
+            continue
+        mod = importlib.import_module(".checks." + Path(ff).stem, package="prevent_sleep")
+        checker = mod.Checker(check_interval_seconds)
+        _LOG.info("Imported checker '%s', from: %s", checker.name, ff.path)
+        check_inhibitors.append(CheckInhibit(checker, max_inactive_seconds))
+    _LOG.info("")
+
+    # For logging
+    _ = SystemdMaskManager()
+    _LOG.info("")
 
     loop_num = 0
+    logging.getLogger().setLevel(logging.DEBUG)  # Log first loop at debug level.
     while not max_loops or loop_num < max_loops:
-        change = ssh_ci.check_and_inhibit(loop_num) or loop_num == 0  # Always log the first loop
-        change = nfs_ci.check_and_inhibit(loop_num) or change
-        _LOG.log(logging.INFO if change else logging.DEBUG, "Sleeping %s seconds.\n", check_interval_seconds)
-        if loglevel >= logging.INFO and loop_num == 0:
-            # Don't log this at DEBUG because it will be incorrect!
-            _LOG.info("Will only log if state changes from now on\n")
+        for check_inhibitor in check_inhibitors:
+            check_inhibitor.check_and_inhibit(loop_num)
+
+        _LOG.log(logging.DEBUG, "Sleeping %s seconds.\n", check_interval_seconds)
+        if loop_num == 0:
+            logging.getLogger().setLevel(loglevel)
+            if loglevel >= logging.INFO:
+                # Don't log this at DEBUG because it will be incorrect!
+                _LOG.info("Will only log if state changes from now on.\n")
 
         loop_num += 1
         time.sleep(check_interval_seconds)

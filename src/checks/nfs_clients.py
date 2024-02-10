@@ -4,13 +4,13 @@ import os
 from pathlib import Path
 import logging
 
-from .checker import Checker
+from . import checker
 
 
 _LOG = logging.getLogger(__name__)
 
 
-class NfsChecker(Checker):
+class Checker(checker.Checker):
     """Check for NFS clients."""
     def __init__(self, check_interval_seconds: int, clients_dir: Path = Path("/proc/fs/nfsd/clients")):
         super().__init__(check_interval_seconds=check_interval_seconds)
