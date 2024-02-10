@@ -27,7 +27,7 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
         prog=Path(argv[0]).name,
         description="Prevent server from going to sleep/suspend when there are active SSH or NFS connections.",
         epilog="")
-    parser.add_argument("--sleep-seconds", type=int, default=10, help="Time to sleep between each check.")
+    parser.add_argument("--check-interval-seconds", type=int, default=10, help="Time to sleep between each check.")
     parser.add_argument("--max-inactive-seconds", type=int, default=120, help="Time delay uninhibit after laste checker requested inhibit.")
     parser.add_argument("--loglevel", help="Name of a Python logging loglevel. E.g.: 'debug'. The default loglevel is 'INFO'")
     parser.add_argument("--install-service", action='store_true', help="Install the systemd service")
@@ -69,7 +69,7 @@ def cli(argv: Sequence[str] = sys.argv):
         install_service()
         return
 
-    prevent_sleep(args.loglevel, args.sleep_seconds, args.max_inactive_seconds)
+    prevent_sleep(args.loglevel, args.check_interval_seconds, args.max_inactive_seconds)
 
 
 if __name__ == "__main__":

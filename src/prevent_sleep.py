@@ -23,9 +23,9 @@ class CheckInhibit():
     Remove inhibit after a delay when clients become inactive or disappear.
     """
 
-    def __init__(self, checker: Checker, inhibitor: DbusInhibit, max_inactive_seconds: int):
+    def __init__(self, checker: Checker, max_inactive_seconds: int):
         self.checker = checker
-        self.inhibitor = inhibitor
+        self.inhibitor = DbusInhibit(checker.name)
         self.max_inactive_seconds = max_inactive_seconds
         self.prev_why = None
         self.last_active_time = None
@@ -55,7 +55,7 @@ class CheckInhibit():
         return False
 
 
-def prevent_sleep(loglevel, sleep_seconds = 10, max_inactive_seconds = 120, max_loops = 0):
+def prevent_sleep(loglevel, check_interval_seconds = 10, max_inactive_seconds = 120, max_loops = 0):
     """Loop and execute checks/inhibits."""
     _LOG.info("Starting prevent-sleep")
 
@@ -64,17 +64,17 @@ def prevent_sleep(loglevel, sleep_seconds = 10, max_inactive_seconds = 120, max_
     if euid:
         _LOG.warning("Program is not running as root. Functionality will be limited.")
 
-    ssh_ci = CheckInhibit(SshChecker(sleep_seconds), DbusInhibit("SSH"), max_inactive_seconds)
-    nfs_ci = CheckInhibit(NfsChecker(sleep_seconds), DbusInhibit("NFS"), max_inactive_seconds)
+    ssh_ci = CheckInhibit(SshChecker(check_interval_seconds), max_inactive_seconds)
+    nfs_ci = CheckInhibit(NfsChecker(check_interval_seconds), max_inactive_seconds)
 
     loop_num = 0
     while not max_loops or loop_num < max_loops:
         change = ssh_ci.check_and_inhibit(loop_num) or loop_num == 0  # Always log the first loop
         change = nfs_ci.check_and_inhibit(loop_num) or change
-        _LOG.log(logging.INFO if change else logging.DEBUG, "Sleeping %s seconds.\n", sleep_seconds)
+        _LOG.log(logging.INFO if change else logging.DEBUG, "Sleeping %s seconds.\n", check_interval_seconds)
         if loglevel >= logging.INFO and loop_num == 0:
             # Don't log this at DEBUG because it will be incorrect!
             _LOG.info("Will only log if state changes from now on\n")
 
         loop_num += 1
-        time.sleep(sleep_seconds)
+        time.sleep(check_interval_seconds)

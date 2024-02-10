@@ -15,10 +15,14 @@ _LOG = logging.getLogger(__name__)
 
 class SshChecker(Checker):
     """Check for *active* SSH clients."""
-    def __init__(self, sleep_seconds: int, max_read_chars_per_second: int = 20):
-        super().__init__(sleep_seconds=sleep_seconds)
-        self.max_read_chars = max_read_chars_per_second * sleep_seconds
+    def __init__(self, check_interval_seconds: int, max_read_chars_per_second: int = 20):
+        super().__init__(check_interval_seconds=check_interval_seconds)
+        self.max_read_chars = max_read_chars_per_second * check_interval_seconds
         self.clients: dict[int, tuple[int, bool, str]] = {}  # pid -> read_chars, active, username
+
+    @property
+    def name(self):
+        return "SSH"
 
     def check(self) -> str:
         """Return non-empty str with info if any active ssh connections are found.
@@ -37,7 +41,7 @@ class SshChecker(Checker):
             username = info["username"]
 
             if info["name"] == "sshd" and username not in ["root", "sshd"]:
-                _LOG.debug("%s", info)
+                _LOG.debug("%s: %s", self.name, info)
                 pid = info["pid"]
 
                 prev_read_chars, prev_active, _ = prev_clients.get(pid, (0, False, ""))
@@ -48,7 +52,7 @@ class SshChecker(Checker):
                     read_since_last = read_chars - prev_read_chars
                     active = read_since_last > self.max_read_chars
                 except AttributeError as ex:
-                    _LOG.warning("Must run as root to determine if SSH session is active. Assuming all sessions active. %s.", ex)
+                    _LOG.warning("%s: Must run as root to determine if session is active. Assuming all sessions active. %s.", self.name, ex)
                     read_chars = 0
                     active = True
 
@@ -58,34 +62,34 @@ class SshChecker(Checker):
                     level = logging.INFO if not prev_active else logging.DEBUG
                     if read_chars:
                         _LOG.log(
-                            level, "Active SSH connection %s, user %s, read %s (more than %s) characters since last check - prevent sleep.",
-                            pid, username, read_since_last, self.max_read_chars)
+                            level, "%s: Active connection %s, user %s, read %s (more than %s) characters since last check - prevent sleep.",
+                            self.name, pid, username, read_since_last, self.max_read_chars)
                     else:
-                        _LOG.log(level, "SSH connection %s assumed active, user %s - prevent sleep.", pid, username)
+                        _LOG.log(level, "%s: connection %s assumed active, user %s - prevent sleep.", self.name, pid, username)
 
                     active_clients.append((pid, username))
                     continue
 
                 if pid not in prev_clients :
-                    _LOG.info("Found SSH connection %s, user '%s' - prevent sleep", pid, username)
+                    _LOG.info("%s: Found connection %s, user '%s' - prevent sleep", self.name, pid, username)
                     active_clients.append((pid, username))
                     continue
 
                 _LOG.log(
                     logging.INFO if prev_active else logging.DEBUG,
-                    "Inactive SSH connection %s, user %s read %s (less than %s) characters since last check.",
-                    pid, username, read_since_last, self.max_read_chars)
+                    "%s: Inactive connection %s, user %s read %s (less than %s) characters since last check.",
+                    self.name, pid, username, read_since_last, self.max_read_chars)
 
         for pid in prev_clients:
             if pid not in self.clients:
-                _LOG.info("SSH client %s has disconnected.", pid)
+                _LOG.info("%s: Client %s has disconnected.", self.name, pid)
 
         if active_clients:
             return f"{len(active_clients)} active clients {active_clients}"
 
         if not self.clients:
-            _LOG.log(logging.INFO if prev_clients else logging.DEBUG, "No SSH connections")
+            _LOG.log(logging.INFO if prev_clients else logging.DEBUG, "%s: No connections", self.name)
             return ""
 
-        _LOG.log(logging.INFO if prev_active_clients else logging.DEBUG, "No active SSH connections")
+        _LOG.log(logging.INFO if prev_active_clients else logging.DEBUG, "%s: No active connections", self.name)
         return ""
