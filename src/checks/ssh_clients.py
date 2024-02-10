@@ -88,8 +88,8 @@ class Checker(checker.Checker):
             return f"{len(active_clients)} active clients {active_clients}"
 
         if not self.clients:
-            _LOG.log(logging.INFO if prev_clients else logging.DEBUG, "%s: No connections", self.name)
+            _LOG.log(logging.INFO if prev_clients else logging.DEBUG, "%s: No connections.", self.name)
             return ""
 
-        _LOG.log(logging.INFO if prev_active_clients else logging.DEBUG, "%s: No active connections", self.name)
+        _LOG.log(logging.INFO if prev_active_clients else logging.DEBUG, "%s: No active connections.", self.name)
         return ""

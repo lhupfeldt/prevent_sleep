@@ -29,10 +29,9 @@ class CheckInhibit():
         self.checker = checker
         self.inhibitor = DbusInhibit(checker.name)
         self.max_inactive_seconds = max_inactive_seconds
-        self.prev_why = None
         self.last_active_time = None
 
-    def check_and_inhibit(self, loop_num):
+    def check_and_inhibit(self):
         """Execute checker and inhibit sleep if checker returns a non-empty str."""
         td_max_inactive = timedelta(seconds=self.max_inactive_seconds)
         why = self.checker.check()
@@ -44,16 +43,13 @@ class CheckInhibit():
         if self.last_active_time:
             time_since_last_active = datetime.now() - self.last_active_time
             if time_since_last_active > td_max_inactive:
-                _LOG.log(
-                    logging.INFO if self.prev_why or loop_num == 0 else logging.DEBUG,
-                    "No activity for %s which is more than max time %s. Removing block.", time_since_last_active, td_max_inactive)
+                _LOG.info("No activity for %s which is more than max time %s. Removing block.", time_since_last_active, td_max_inactive)
                 return self.inhibitor.uninhibit()
 
             _LOG.debug("Time since last activity %s which is less than max time %s", time_since_last_active, td_max_inactive)
             remove_time = (self.last_active_time + td_max_inactive).isoformat(timespec='seconds')
             return self.inhibitor.inhibit(f"No activity. Will remove block at {remove_time}")
 
-        _LOG.debug("No activity")
         return False
 
 
@@ -85,7 +81,7 @@ def prevent_sleep(loglevel, check_interval_seconds = 10, max_inactive_seconds = 
     logging.getLogger().setLevel(logging.DEBUG)  # Log first loop at debug level.
     while not max_loops or loop_num < max_loops:
         for check_inhibitor in check_inhibitors:
-            check_inhibitor.check_and_inhibit(loop_num)
+            check_inhibitor.check_and_inhibit()
 
         _LOG.log(logging.DEBUG, "Sleeping %s seconds.\n", check_interval_seconds)
         if loop_num == 0:
