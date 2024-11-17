@@ -1,5 +1,5 @@
 *~
-*.pyc
+*.py[cod]
 __pycache__
 .cache
 .coverage
@@ -13,6 +13,8 @@ dist
 .tox
 .nox
 .mypy_cache
+*_flymake.py
+flycheck_*.py
 build
 test/out
 

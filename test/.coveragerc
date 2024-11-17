@@ -24,6 +24,8 @@ partial_branches =
     pragma: no branch
 
 omit =
+    .nox/*
     test/*
     experiments
-    .nox/*
+    *_flymake.py
+    flycheck_*.py
