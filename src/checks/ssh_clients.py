@@ -40,7 +40,7 @@ class Checker(checker.Checker):
             info = proc.info  # type: ignore
             username = info["username"]
 
-            if info["name"] == "sshd" and username not in ["root", "sshd"]:
+            if info["name"] in ("sshd-session", "sshd") and username not in ("root", "sshd"):
                 _LOG.debug("%s: %s", self.name, info)
                 pid = info["pid"]
 
